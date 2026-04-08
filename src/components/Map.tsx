@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from "react-leaflet"
 import L from 'leaflet';
 
 // Fix for default marker icons in React Leaflet
@@ -11,11 +11,18 @@ L.Icon.Default.mergeOptions({
 
 export default function Map() {
   return (
-    <MapContainer center={[41.8781, -87.6298]} zoom={11} scrollWheelZoom={false} className="h-full w-full">
+    <MapContainer 
+      center={[41.8781, -87.6298]} 
+      zoom={11} 
+      scrollWheelZoom={false} 
+      className="h-full w-full"
+      zoomControl={false}
+    >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <ZoomControl position="topright" />
       <Marker position={[41.8781, -87.6298]}>
         <Popup>
           Chicago, IL
