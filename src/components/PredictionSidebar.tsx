@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { PredictionForm } from "@/components/PredictionForm";
 import { PredictionResult } from "@/components/PredictionResult";
 import { predict, getFeatureOptions } from "@/api/prediction";
@@ -98,9 +100,16 @@ export function PredictionSidebar({ children }: PredictionSidebarProps) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-12 items-center gap-2 border-b bg-background px-4">
-          <SidebarTrigger />
-          <span className="text-sm font-medium">Crash Prediction Map</span>
+        <header className="sticky top-0 z-10 flex h-12 items-center justify-between gap-2 border-b bg-background px-4">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger />
+            <span className="text-sm font-medium">Crash Prediction Map</span>
+          </div>
+          <Link to="/accuracy">
+            <Button variant="outline" size="sm">
+              Model Accuracy
+            </Button>
+          </Link>
         </header>
         <div className="flex-1">{children}</div>
       </SidebarInset>
