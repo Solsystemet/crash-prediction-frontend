@@ -15,17 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ConfusionMatrix } from "@/components/ConfusionMatrix";
+import { PredictionsTable } from "@/components/PredictionsTable";
 import { getAccuracyMetrics, type MapFilter } from "@/api/accuracy";
 import type {
   AccuracyResponse,
@@ -33,11 +25,7 @@ import type {
   TimeRangeValue,
   MapPrediction,
 } from "@/types/accuracy";
-import {
-  TIME_RANGE_OPTIONS,
-  SEVERITY_COLORS,
-  CORRECTNESS_COLORS,
-} from "@/types/accuracy";
+import { TIME_RANGE_OPTIONS, SEVERITY_COLORS } from "@/types/accuracy";
 
 // Lazy load map component for better initial load
 const AccuracyMap = lazy(() =>
@@ -105,16 +93,6 @@ export function AccuracyDashboard() {
 
   // Format percentage
   const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
-
-  // Format date
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return "Unknown";
-    try {
-      return new Date(dateStr).toLocaleDateString();
-    } catch {
-      return dateStr;
-    }
-  };
 
   return (
     <div className="flex h-screen flex-col">
@@ -394,64 +372,11 @@ export function AccuracyDashboard() {
               <Card className="h-full flex flex-col">
                 <CardHeader className="pb-2 flex-shrink-0">
                   <CardTitle className="text-sm font-medium">
-                    Individual Predictions ({data.predictions.length} total)
+                    Individual Predictions
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex-1 p-0">
-                  <ScrollArea className="h-full">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background">
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Predicted</TableHead>
-                          <TableHead>Actual</TableHead>
-                          <TableHead>Result</TableHead>
-                          <TableHead>Confidence</TableHead>
-                          <TableHead>Weather</TableHead>
-                          <TableHead>Lighting</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {data.predictions.map((pred) => (
-                          <TableRow key={pred.crash_record_id}>
-                            <TableCell>
-                              {formatDate(pred.crash_date)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`${SEVERITY_COLORS[pred.predicted_severity].bg} ${SEVERITY_COLORS[pred.predicted_severity].text} text-xs`}
-                              >
-                                {pred.predicted_severity.replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`${SEVERITY_COLORS[pred.actual_severity].bg} ${SEVERITY_COLORS[pred.actual_severity].text} text-xs`}
-                              >
-                                {pred.actual_severity.replace("_", " ")}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={`${pred.is_correct ? CORRECTNESS_COLORS.correct.bg : CORRECTNESS_COLORS.incorrect.bg} ${pred.is_correct ? CORRECTNESS_COLORS.correct.text : CORRECTNESS_COLORS.incorrect.text} text-xs`}
-                              >
-                                {pred.is_correct ? "Correct" : "Wrong"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono">
-                              {formatPercent(pred.confidence)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {pred.weather_condition || "-"}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {pred.lighting_condition || "-"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
+                <CardContent className="flex-1 overflow-hidden p-2">
+                  <PredictionsTable predictions={data.predictions} />
                 </CardContent>
               </Card>
             )}
