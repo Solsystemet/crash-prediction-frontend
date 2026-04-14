@@ -13,14 +13,6 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -30,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { PredictionWithActual } from "@/types/accuracy";
 import { SEVERITY_COLORS, CORRECTNESS_COLORS } from "@/types/accuracy";
 
@@ -254,20 +245,20 @@ export function PredictionsTable({ predictions }: PredictionsTableProps) {
         </span>
       </div>
 
-      {/* Table */}
-      <ScrollArea className="flex-1">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background">
+      {/* Table with native scrolling */}
+      <div className="flex-1 min-h-0 overflow-auto border rounded-md">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-background border-b">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
 
                   return (
-                    <TableHead
+                    <th
                       key={header.id}
-                      className={canSort ? "cursor-pointer select-none" : ""}
+                      className={`h-10 px-3 text-left align-middle font-medium text-foreground whitespace-nowrap ${canSort ? "cursor-pointer select-none hover:bg-muted/50" : ""}`}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <div className="flex items-center gap-1">
@@ -281,39 +272,42 @@ export function PredictionsTable({ predictions }: PredictionsTableProps) {
                           </span>
                         )}
                       </div>
-                    </TableHead>
+                    </th>
                   );
                 })}
-              </TableRow>
+              </tr>
             ))}
-          </TableHeader>
-          <TableBody>
+          </thead>
+          <tbody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <tr
+                  key={row.id}
+                  className="border-b transition-colors hover:bg-muted/50"
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <td key={cell.id} className="p-3 align-middle whitespace-nowrap">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
-                    </TableCell>
+                    </td>
                   ))}
-                </TableRow>
+                </tr>
               ))
             ) : (
-              <TableRow>
-                <TableCell
+              <tr>
+                <td
                   colSpan={columns.length}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No predictions match the current filters.
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

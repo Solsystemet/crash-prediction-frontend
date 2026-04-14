@@ -13,7 +13,6 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { PredictionForm } from "@/components/PredictionForm";
 import { PredictionResult } from "@/components/PredictionResult";
@@ -77,17 +76,15 @@ export function PredictionSidebar({ children }: PredictionSidebarProps) {
           </p>
         </SidebarHeader>
 
-        <SidebarContent>
-          <ScrollArea className="h-[calc(100vh-180px)]">
-            <div className="p-4">
-              <PredictionForm
-                featureOptions={featureOptions}
-                onSubmit={handleSubmit}
-                onReset={handleReset}
-                isLoading={isLoading}
-              />
-            </div>
-          </ScrollArea>
+        <SidebarContent className="overflow-hidden">
+          <div className="h-full overflow-y-auto p-4">
+            <PredictionForm
+              featureOptions={featureOptions}
+              onSubmit={handleSubmit}
+              onReset={handleReset}
+              isLoading={isLoading}
+            />
+          </div>
         </SidebarContent>
 
         <SidebarFooter className="border-t p-4">
