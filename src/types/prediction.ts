@@ -2,11 +2,43 @@
  * Types and Zod schemas for the crash severity prediction API.
  */
 
-import { z } from "zod";
+import { z } from "zod"
+
+// Model type enum for selecting prediction model
+export const ModelTypeSchema = z.enum([
+  "simplified",
+  "hierarchical",
+  "zones",
+  "regression",
+])
+export type ModelType = z.infer<typeof ModelTypeSchema>
+
+// Model type display info
+export const MODEL_TYPE_INFO: Record<
+  ModelType,
+  { label: string; description: string }
+> = {
+  simplified: {
+    label: "Severity (3-Class)",
+    description: "Predicts NO_INJURY, MINOR, or SEVERE",
+  },
+  hierarchical: {
+    label: "Hierarchical (5-Class)",
+    description: "Detailed 5-level severity prediction",
+  },
+  zones: {
+    label: "Zone-Based",
+    description: "Location-aware severity prediction",
+  },
+  regression: {
+    label: "Crash Count",
+    description: "Predicts expected number of crashes",
+  },
+}
 
 // Severity class enum
-export const SeverityClassSchema = z.enum(["NO_INJURY", "MINOR", "SEVERE"]);
-export type SeverityClass = z.infer<typeof SeverityClassSchema>;
+export const SeverityClassSchema = z.enum(["NO_INJURY", "MINOR", "SEVERE"])
+export type SeverityClass = z.infer<typeof SeverityClassSchema>
 
 // Prediction request schema with validation
 export const PredictionRequestSchema = z.object({
@@ -107,18 +139,27 @@ export const PredictionRequestSchema = z.object({
     .int()
     .min(1, "Month must be 1-12")
     .max(12, "Month must be 1-12"),
-});
 
-export type PredictionRequest = z.infer<typeof PredictionRequestSchema>;
+  // Model selection
+  model_type: ModelTypeSchema.optional().default("simplified"),
+
+  // Zone-based model fields (optional)
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+})
+
+export type PredictionRequest = z.infer<typeof PredictionRequestSchema>
 
 // Prediction probabilities
 export const PredictionProbabilitiesSchema = z.object({
   no_injury: z.number().min(0).max(1),
   minor: z.number().min(0).max(1),
   severe: z.number().min(0).max(1),
-});
+})
 
-export type PredictionProbabilities = z.infer<typeof PredictionProbabilitiesSchema>;
+export type PredictionProbabilities = z.infer<
+  typeof PredictionProbabilitiesSchema
+>
 
 // Prediction response
 export const PredictionResponseSchema = z.object({
@@ -126,9 +167,176 @@ export const PredictionResponseSchema = z.object({
   probabilities: PredictionProbabilitiesSchema,
   confidence: z.number().min(0).max(1),
   model_name: z.string(),
-});
+})
 
-export type PredictionResponse = z.infer<typeof PredictionResponseSchema>;
+export type PredictionResponse = z.infer<typeof PredictionResponseSchema>
+
+// Zone-based prediction response
+export const ZonePredictionResponseSchema = z.object({
+  prediction: SeverityClassSchema,
+  probabilities: PredictionProbabilitiesSchema,
+  confidence: z.number().min(0).max(1),
+  model_name: z.string(),
+  zone_id: z.number(),
+  zone_center: z.tuple([z.number(), z.number()]),
+})
+
+export type ZonePredictionResponse = z.infer<
+  typeof ZonePredictionResponseSchema
+>
+
+// Zone info for map visualization
+export const ZoneInfoSchema = z.object({
+  zone_id: z.number(),
+  center: z.tuple([z.number(), z.number()]),
+  crash_count: z.number().nullable(),
+})
+
+export type ZoneInfo = z.infer<typeof ZoneInfoSchema>
+
+// Zones list response
+export const ZonesResponseSchema = z.object({
+  zones: z.array(ZoneInfoSchema),
+  total_zones: z.number(),
+})
+
+export type ZonesResponse = z.infer<typeof ZonesResponseSchema>
+
+// Request for zone-based prediction by zone ID
+export const ZonePredictionByIdRequestSchema = z.object({
+  zone_id: z.number().min(0).max(100),
+  person_count: z.number().int().min(1).max(50),
+  vehicle_count: z.number().int().min(1).max(20),
+  first_crash_type: z.string(),
+  damage: z.string(),
+  prim_contributory_cause: z.string(),
+  age_mean: z.number().min(0).max(120),
+  age_min: z.number().int().min(0).max(120),
+  age_max: z.number().int().min(0).max(120),
+  driver_count: z.number().int().min(0).max(20),
+  avg_vehicle_year: z.number().int().min(1900).max(2030),
+  oldest_vehicle_year: z.number().int().min(1900).max(2030),
+  posted_speed_limit: z.number().int().min(0).max(100),
+  traffic_control_device: z.string(),
+  device_condition: z.string(),
+  trafficway_type: z.string(),
+  lighting_condition: z.string(),
+  road_defect: z.string(),
+  roadway_surface_cond: z.string(),
+  alignment: z.string(),
+  weather_condition: z.string(),
+  air_temperature: z.number().min(-50).max(150),
+  humidity: z.number().min(0).max(100),
+  wind_speed: z.number().min(0).max(200),
+  rain_intensity: z.number().min(0).max(10),
+  crash_hour: z.number().int().min(0).max(23),
+  crash_day_of_week: z.number().int().min(1).max(7),
+  crash_month: z.number().int().min(1).max(12),
+})
+
+export type ZonePredictionByIdRequest = z.infer<
+  typeof ZonePredictionByIdRequestSchema
+>
+
+// All zones prediction response
+export const AllZonesPredictionResponseSchema = z.object({
+  predictions: z.array(ZonePredictionResponseSchema),
+  total_zones: z.number(),
+})
+
+export type AllZonesPredictionResponse = z.infer<
+  typeof AllZonesPredictionResponseSchema
+>
+
+// Regression prediction response
+export const RegressionPredictionResponseSchema = z.object({
+  predicted_count: z.number().min(0),
+  confidence_interval: z.tuple([z.number(), z.number()]),
+  zone_id: z.number().nullable(),
+  time_period: z.string(),
+  model_name: z.string(),
+})
+
+export type RegressionPredictionResponse = z.infer<
+  typeof RegressionPredictionResponseSchema
+>
+
+// Hierarchical 5-class severity enum
+export const HierarchicalSeverityClassSchema = z.enum([
+  "NO_INJURY",
+  "REPORTED_NOT_EVIDENT",
+  "NONINCAPACITATING",
+  "INCAPACITATING",
+  "FATAL",
+])
+export type HierarchicalSeverityClass = z.infer<
+  typeof HierarchicalSeverityClassSchema
+>
+
+// Hierarchical 5-class probabilities
+export const HierarchicalProbabilitiesSchema = z.object({
+  no_injury: z.number().min(0).max(1),
+  reported_not_evident: z.number().min(0).max(1),
+  nonincapacitating: z.number().min(0).max(1),
+  incapacitating: z.number().min(0).max(1),
+  fatal: z.number().min(0).max(1),
+})
+
+export type HierarchicalProbabilities = z.infer<
+  typeof HierarchicalProbabilitiesSchema
+>
+
+// Hierarchical prediction response
+export const HierarchicalPredictionResponseSchema = z.object({
+  prediction: HierarchicalSeverityClassSchema,
+  probabilities: HierarchicalProbabilitiesSchema,
+  confidence: z.number().min(0).max(1),
+  model_name: z.string(),
+})
+
+export type HierarchicalPredictionResponse = z.infer<
+  typeof HierarchicalPredictionResponseSchema
+>
+
+// Union type for all prediction responses
+export type AnyPredictionResponse =
+  | PredictionResponse
+  | ZonePredictionResponse
+  | RegressionPredictionResponse
+  | HierarchicalPredictionResponse
+
+// Type guards for response types
+export function isRegressionResponse(
+  response: AnyPredictionResponse
+): response is RegressionPredictionResponse {
+  return "predicted_count" in response
+}
+
+export function isHierarchicalResponse(
+  response: AnyPredictionResponse
+): response is HierarchicalPredictionResponse {
+  return (
+    "probabilities" in response &&
+    "incapacitating" in
+      (response as HierarchicalPredictionResponse).probabilities
+  )
+}
+
+export function isZoneResponse(
+  response: AnyPredictionResponse
+): response is ZonePredictionResponse {
+  return "zone_id" in response && "prediction" in response
+}
+
+export function isSeverityResponse(
+  response: AnyPredictionResponse
+): response is PredictionResponse {
+  return (
+    "prediction" in response &&
+    !("zone_id" in response) &&
+    !isHierarchicalResponse(response)
+  )
+}
 
 // Feature options for dropdowns
 export const FeatureOptionsSchema = z.object({
@@ -143,18 +351,18 @@ export const FeatureOptionsSchema = z.object({
   trafficway_type: z.array(z.string()),
   road_defect: z.array(z.string()),
   alignment: z.array(z.string()),
-});
+})
 
-export type FeatureOptions = z.infer<typeof FeatureOptionsSchema>;
+export type FeatureOptions = z.infer<typeof FeatureOptionsSchema>
 
 // Health response
 export const HealthResponseSchema = z.object({
   status: z.string(),
   model_loaded: z.boolean(),
   model_name: z.string().nullable(),
-});
+})
 
-export type HealthResponse = z.infer<typeof HealthResponseSchema>;
+export type HealthResponse = z.infer<typeof HealthResponseSchema>
 
 // Default values for the prediction form
 export const DEFAULT_PREDICTION_REQUEST: PredictionRequest = {
@@ -185,7 +393,8 @@ export const DEFAULT_PREDICTION_REQUEST: PredictionRequest = {
   crash_hour: 14,
   crash_day_of_week: 3,
   crash_month: 6,
-};
+  model_type: "simplified",
+}
 
 // Default feature options (fallback when API is unavailable)
 export const DEFAULT_FEATURE_OPTIONS: FeatureOptions = {
@@ -275,4 +484,4 @@ export const DEFAULT_FEATURE_OPTIONS: FeatureOptions = {
     "CURVE ON GRADE",
     "UNKNOWN",
   ],
-};
+}
