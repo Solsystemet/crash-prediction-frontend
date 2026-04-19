@@ -2,74 +2,77 @@
  * Form component for crash severity prediction inputs using TanStack Form + Zod.
  */
 
-import { useState } from "react";
-import { useForm } from "@tanstack/react-form";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { useState } from "react"
+import { useForm } from "@tanstack/react-form"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { ZoneSelector } from "@/components/ZoneSelector"
 import {
   type PredictionRequest,
   type FeatureOptions,
+  type ModelType,
   PredictionRequestSchema,
   DEFAULT_PREDICTION_REQUEST,
   DEFAULT_FEATURE_OPTIONS,
-} from "@/types/prediction";
+} from "@/types/prediction"
 
 type PredictionFormProps = {
-  featureOptions: FeatureOptions | null;
-  onSubmit: (data: PredictionRequest) => void;
-  onReset: () => void;
-  isLoading: boolean;
-};
+  featureOptions: FeatureOptions | null
+  onSubmit: (data: PredictionRequest) => void
+  onReset: () => void
+  isLoading: boolean
+  modelType?: ModelType
+  /** Selected zone ID for zones model (null = all zones) */
+  selectedZoneId?: number | null
+  /** Called when zone selection changes */
+  onZoneChange?: (zoneId: number | null) => void
+}
 
 type FormSectionProps = {
-  title: string;
-  children: React.ReactNode;
-};
+  title: string
+  children: React.ReactNode
+}
 
 function FormSection({ title, children }: FormSectionProps) {
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         {title}
       </h3>
       <div className="space-y-3">{children}</div>
     </div>
-  );
+  )
 }
 
 type FieldErrorProps = {
-  errors: string[];
-};
+  errors: string[]
+}
 
 function FieldError({ errors }: FieldErrorProps) {
-  if (errors.length === 0) return null;
-  return (
-    <p className="text-xs text-destructive mt-1">
-      {errors[0]}
-    </p>
-  );
+  if (errors.length === 0) return null
+  return <p className="mt-1 text-xs text-destructive">{errors[0]}</p>
 }
 
 type NumberFieldProps = {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  onBlur: () => void;
-  errors: string[];
-  min?: number;
-  max?: number;
-  step?: number;
-  formKey?: number;
-};
+  label: string
+  value: number
+  onChange: (value: number) => void
+  onBlur: () => void
+  errors: string[]
+  min?: number
+  max?: number
+  step?: number
+  formKey?: number
+}
 
 function NumberField({
   label,
@@ -82,32 +85,32 @@ function NumberField({
   step = 1,
   formKey = 0,
 }: NumberFieldProps) {
-  const [displayValue, setDisplayValue] = useState(String(value));
-  const [lastFormKey, setLastFormKey] = useState(formKey);
+  const [displayValue, setDisplayValue] = useState(String(value))
+  const [lastFormKey, setLastFormKey] = useState(formKey)
 
   // Reset display value when form is reset (formKey changes)
   if (formKey !== lastFormKey) {
-    setDisplayValue(String(value));
-    setLastFormKey(formKey);
+    setDisplayValue(String(value))
+    setLastFormKey(formKey)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    setDisplayValue(rawValue);
-    
+    const rawValue = e.target.value
+    setDisplayValue(rawValue)
+
     // Only update form state if it's a valid number
     if (rawValue !== "" && !isNaN(Number(rawValue))) {
-      onChange(Number(rawValue));
+      onChange(Number(rawValue))
     }
-  };
+  }
 
   const handleBlur = () => {
     // On blur, if empty, reset to current form value
     if (displayValue === "" || isNaN(Number(displayValue))) {
-      setDisplayValue(String(value));
+      setDisplayValue(String(value))
     }
-    onBlur();
-  };
+    onBlur()
+  }
 
   return (
     <div className="space-y-1.5">
@@ -124,7 +127,7 @@ function NumberField({
       />
       <FieldError errors={errors} />
     </div>
-  );
+  )
 }
 
 export function PredictionForm({
@@ -132,42 +135,50 @@ export function PredictionForm({
   onSubmit,
   onReset,
   isLoading,
+  modelType = "simplified",
+  selectedZoneId,
+  onZoneChange,
 }: PredictionFormProps) {
-  const options = featureOptions || DEFAULT_FEATURE_OPTIONS;
-  const [formKey, setFormKey] = useState(0);
+  const options = featureOptions || DEFAULT_FEATURE_OPTIONS
+  const [formKey, setFormKey] = useState(0)
+  const showZoneSelector = modelType === "zones"
 
   const form = useForm({
-    defaultValues: DEFAULT_PREDICTION_REQUEST,
+    defaultValues: {
+      ...DEFAULT_PREDICTION_REQUEST,
+      latitude: 41.8781, // Chicago default
+      longitude: -87.6298,
+    },
     onSubmit: async ({ value }) => {
       // Validate with Zod before submitting
-      const result = PredictionRequestSchema.safeParse(value);
+      const result = PredictionRequestSchema.safeParse(value)
       if (result.success) {
-        onSubmit(result.data);
+        onSubmit(result.data)
       }
     },
     validators: {
       onSubmit: ({ value }) => {
-        const result = PredictionRequestSchema.safeParse(value);
+        const result = PredictionRequestSchema.safeParse(value)
         if (!result.success) {
-          return result.error.issues[0]?.message || "Validation failed";
+          return result.error.issues[0]?.message || "Validation failed"
         }
-        return undefined;
+        return undefined
       },
     },
-  });
+  })
 
   const handleReset = () => {
-    form.reset();
-    setFormKey((k) => k + 1); // Trigger re-sync of NumberField components
-    onReset();
-  };
+    form.reset()
+    setFormKey((k) => k + 1) // Trigger re-sync of NumberField components
+    onReset()
+  }
 
   return (
     <form
       onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
+        e.preventDefault()
+        e.stopPropagation()
+        form.handleSubmit()
       }}
       className="space-y-4"
     >
@@ -209,7 +220,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Crash Type</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -221,7 +235,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -230,7 +246,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Damage Level</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -242,7 +261,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -251,7 +272,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Primary Cause</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -263,11 +287,27 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
       </FormSection>
+
+      {/* Zone Selection - only for zone-based model */}
+      {showZoneSelector && (
+        <>
+          <Separator />
+          <FormSection title="Zone Selection">
+            <ZoneSelector
+              selectedZoneId={selectedZoneId}
+              onZoneChange={(zoneId) => onZoneChange?.(zoneId)}
+              isLoading={isLoading}
+            />
+          </FormSection>
+        </>
+      )}
 
       <Separator />
 
@@ -398,7 +438,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Traffic Control</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -410,7 +453,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -419,7 +464,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Device Condition</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -431,7 +479,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -440,7 +490,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Trafficway Type</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -452,7 +505,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -461,7 +516,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Lighting</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -473,7 +531,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -482,7 +542,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Road Surface</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -494,7 +557,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -503,7 +568,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Road Defect</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -515,7 +583,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -524,7 +594,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Alignment</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -536,7 +609,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -550,7 +625,10 @@ export function PredictionForm({
           {(field) => (
             <div className="space-y-1.5">
               <Label className="text-xs">Weather</Label>
-              <Select value={field.state.value} onValueChange={field.handleChange}>
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -562,7 +640,9 @@ export function PredictionForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError errors={field.state.meta.errors.map(e => String(e))} />
+              <FieldError
+                errors={field.state.meta.errors.map((e) => String(e))}
+              />
             </div>
           )}
         </form.Field>
@@ -689,7 +769,9 @@ export function PredictionForm({
 
       {/* Submit buttons */}
       <div className="flex gap-2 pt-2">
-        <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+        >
           {([canSubmit, isSubmitting]) => (
             <Button
               type="submit"
@@ -712,5 +794,5 @@ export function PredictionForm({
         </Button>
       </div>
     </form>
-  );
+  )
 }
