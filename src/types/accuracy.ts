@@ -24,6 +24,8 @@ export const AccuracyMetricsSchema = z.object({
   class_labels: z.array(z.string()),
   time_range_days: z.number().int(),
   computed_at: z.string(),
+  f1_macro: z.number().min(0).max(1),
+  f1_micro: z.number().min(0).max(1),
 });
 
 export type AccuracyMetrics = z.infer<typeof AccuracyMetricsSchema>;
@@ -89,6 +91,17 @@ export const TIME_RANGE_OPTIONS = [
 ] as const;
 
 export type TimeRangeValue = (typeof TIME_RANGE_OPTIONS)[number]["value"];
+
+// Sample size options for the UI
+export const SAMPLE_SIZE_OPTIONS = [
+  { value: 500, label: "500 samples" },
+  { value: 1000, label: "1,000 samples" },
+  { value: 2000, label: "2,000 samples" },
+  { value: 5000, label: "5,000 samples" },
+  { value: 10000, label: "10,000 samples" },
+] as const;
+
+export type SampleSizeValue = (typeof SAMPLE_SIZE_OPTIONS)[number]["value"];
 
 // Severity class colors for visualization
 export const SEVERITY_COLORS = {

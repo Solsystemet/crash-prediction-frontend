@@ -20,8 +20,8 @@ export type MapFilter = "all" | "correct" | "incorrect";
  * @returns AccuracyResponse with metrics and individual predictions
  */
 export async function getAccuracyMetrics(
-  days: TimeRangeValue = 7,
-  maxCrashes: number = 500
+  days: TimeRangeValue,
+  maxCrashes: number
 ): Promise<AccuracyResponse> {
   const params = new URLSearchParams({
     days: days.toString(),

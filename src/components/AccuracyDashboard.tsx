@@ -25,7 +25,7 @@ import type {
   TimeRangeValue,
   MapPrediction,
 } from "@/types/accuracy";
-import { TIME_RANGE_OPTIONS, SEVERITY_COLORS } from "@/types/accuracy";
+import { TIME_RANGE_OPTIONS, SEVERITY_COLORS, SAMPLE_SIZE_OPTIONS, type SampleSizeValue } from "@/types/accuracy";
 
 // Lazy load map component for better initial load
 const AccuracyMap = lazy(() =>
@@ -36,6 +36,7 @@ type ViewMode = "dashboard" | "map" | "table";
 
 export function AccuracyDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRangeValue>(7);
+  const [sampleSize, setSampleSize] = useState<SampleSizeValue>(2000);
   const [data, setData] = useState<AccuracyResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export function AccuracyDashboard() {
     setError(null);
 
     try {
-      const result = await getAccuracyMetrics(timeRange, 500);
+      const result = await getAccuracyMetrics(timeRange, sampleSize);
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch accuracy");
@@ -55,7 +56,7 @@ export function AccuracyDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [timeRange]);
+  }, [timeRange, sampleSize]);
 
   // Get filtered predictions for map
   const getFilteredMapPredictions = (): MapPrediction[] => {
@@ -143,6 +144,23 @@ export function AccuracyDashboard() {
               </SelectContent>
             </Select>
 
+            {/* Sample size selector */}
+            <Select
+              value={sampleSize.toString()}
+              onValueChange={(v) => setSampleSize(Number(v) as SampleSizeValue)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SAMPLE_SIZE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {/* Fetch button */}
             <Button onClick={fetchAccuracy} disabled={isLoading}>
               {isLoading ? (
@@ -209,7 +227,7 @@ export function AccuracyDashboard() {
                 {/* Left column: Metrics */}
                 <div className="flex flex-col gap-4 overflow-auto">
                   {/* Summary cards */}
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
                     <Card>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xs font-medium text-muted-foreground">
@@ -219,6 +237,32 @@ export function AccuracyDashboard() {
                       <CardContent>
                         <div className="text-2xl font-bold">
                           {formatPercent(data.metrics.overall_accuracy)}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-medium text-muted-foreground">
+                          F1 Macro
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {formatPercent(data.metrics.f1_macro)}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-medium text-muted-foreground">
+                          F1 Micro
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {formatPercent(data.metrics.f1_micro)}
                         </div>
                       </CardContent>
                     </Card>
