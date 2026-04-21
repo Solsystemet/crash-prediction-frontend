@@ -1,6 +1,7 @@
 /**
  * Accuracy Dashboard component.
  * Shows model accuracy metrics using real Chicago crash data.
+ * Supports multiple models with comparison view.
  */
 
 import { useState, useCallback, lazy, Suspense } from "react";
@@ -18,26 +19,30 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfusionMatrix } from "@/components/ConfusionMatrix";
 import { PredictionsTable } from "@/components/PredictionsTable";
-import { getAccuracyMetrics, type MapFilter } from "@/api/accuracy";
+import { getAccuracyMetrics, getModelComparison, type MapFilter } from "@/api/accuracy";
 import type {
   AccuracyResponse,
   PredictionWithActual,
   TimeRangeValue,
   MapPrediction,
+  ModelValue,
+  ModelComparisonResponse,
 } from "@/types/accuracy";
-import { TIME_RANGE_OPTIONS, SEVERITY_COLORS, SAMPLE_SIZE_OPTIONS, type SampleSizeValue } from "@/types/accuracy";
+import { TIME_RANGE_OPTIONS, SEVERITY_COLORS, SAMPLE_SIZE_OPTIONS, MODEL_OPTIONS, type SampleSizeValue } from "@/types/accuracy";
 
 // Lazy load map component for better initial load
 const AccuracyMap = lazy(() =>
   import("@/components/AccuracyMap").then((m) => ({ default: m.AccuracyMap }))
 );
 
-type ViewMode = "dashboard" | "map" | "table";
+type ViewMode = "dashboard" | "map" | "table" | "compare";
 
 export function AccuracyDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRangeValue>(7);
   const [sampleSize, setSampleSize] = useState<SampleSizeValue>(2000);
+  const [selectedModel, setSelectedModel] = useState<ModelValue>("simplified_3class");
   const [data, setData] = useState<AccuracyResponse | null>(null);
+  const [comparisonData, setComparisonData] = useState<ModelComparisonResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
@@ -48,15 +53,23 @@ export function AccuracyDashboard() {
     setError(null);
 
     try {
-      const result = await getAccuracyMetrics(timeRange, sampleSize);
-      setData(result);
+      if (viewMode === "compare") {
+        const result = await getModelComparison(timeRange, sampleSize);
+        setComparisonData(result);
+        setData(null);
+      } else {
+        const result = await getAccuracyMetrics(timeRange, sampleSize, selectedModel);
+        setData(result);
+        setComparisonData(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch accuracy");
       setData(null);
+      setComparisonData(null);
     } finally {
       setIsLoading(false);
     }
-  }, [timeRange, sampleSize]);
+  }, [timeRange, sampleSize, selectedModel, viewMode]);
 
   // Get filtered predictions for map
   const getFilteredMapPredictions = (): MapPrediction[] => {
@@ -124,8 +137,28 @@ export function AccuracyDashboard() {
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                 <TabsTrigger value="map">Map</TabsTrigger>
                 <TabsTrigger value="table">Table</TabsTrigger>
+                <TabsTrigger value="compare">Compare</TabsTrigger>
               </TabsList>
             </Tabs>
+
+            {/* Model selector - only show when not in compare mode */}
+            {viewMode !== "compare" && (
+              <Select
+                value={selectedModel}
+                onValueChange={(v) => setSelectedModel(v as ModelValue)}
+              >
+                <SelectTrigger className="w-[170px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODEL_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Time range selector */}
             <Select
@@ -168,6 +201,8 @@ export function AccuracyDashboard() {
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
                   Loading...
                 </>
+              ) : viewMode === "compare" ? (
+                "Compare Models"
               ) : (
                 "Fetch Data"
               )}
@@ -186,13 +221,14 @@ export function AccuracyDashboard() {
           </Card>
         )}
 
-        {!data && !isLoading && !error && (
+        {!data && !comparisonData && !isLoading && !error && (
           <Card className="flex h-full items-center justify-center">
             <CardContent>
               <div className="text-center">
                 <p className="text-muted-foreground">
-                  Click "Fetch Data" to load accuracy metrics from recent
-                  Chicago crash data.
+                  {viewMode === "compare"
+                    ? 'Click "Compare Models" to evaluate all models on the same dataset.'
+                    : 'Click "Fetch Data" to load accuracy metrics from recent Chicago crash data.'}
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   This will fetch real crash data from the City of Chicago's
@@ -425,6 +461,124 @@ export function AccuracyDashboard() {
               </Card>
             )}
           </>
+        )}
+
+        {/* Comparison View */}
+        {viewMode === "compare" && comparisonData && !isLoading && (
+          <div className="flex flex-col gap-4 overflow-auto h-full">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">
+                  Model Comparison
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Evaluated on {comparisonData.max_crashes.toLocaleString()} crashes from the last {comparisonData.time_range_days} days
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">Model</th>
+                        <th className="text-left py-3 px-4 font-medium">Type</th>
+                        <th className="text-right py-3 px-4 font-medium">Accuracy</th>
+                        <th className="text-right py-3 px-4 font-medium">F1 Macro</th>
+                        <th className="text-right py-3 px-4 font-medium">F1 Micro</th>
+                        <th className="text-right py-3 px-4 font-medium">Samples</th>
+                        <th className="text-center py-3 px-4 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.values(comparisonData.models).map((model) => (
+                        <tr key={model.model_name} className="border-b hover:bg-muted/50">
+                          <td className="py-3 px-4 font-medium">{model.display_name}</td>
+                          <td className="py-3 px-4">
+                            <Badge variant="outline" className="capitalize">
+                              {model.model_type}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {model.metrics ? formatPercent(model.metrics.overall_accuracy) : "-"}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {model.metrics ? formatPercent(model.metrics.f1_macro) : "-"}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {model.metrics ? formatPercent(model.metrics.f1_micro) : "-"}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {model.metrics ? model.metrics.sample_count.toLocaleString() : "-"}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {model.status === "success" ? (
+                              <Badge className="bg-green-100 text-green-800">Success</Badge>
+                            ) : (
+                              <Badge className="bg-red-100 text-red-800" title={model.error || undefined}>
+                                Error
+                              </Badge>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Per-class recall comparison */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-medium">
+                  Per-Class Recall Comparison
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Shows how well each model identifies each severity class
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">Model</th>
+                        {/* Dynamic headers based on class labels from first successful model */}
+                        {Object.values(comparisonData.models)
+                          .find((m) => m.metrics)
+                          ?.metrics?.class_labels.map((label) => (
+                            <th key={label} className="text-right py-3 px-4 font-medium">
+                              <Badge
+                                className={`${SEVERITY_COLORS[label as keyof typeof SEVERITY_COLORS]?.bg || "bg-gray-100"} ${SEVERITY_COLORS[label as keyof typeof SEVERITY_COLORS]?.text || "text-gray-800"}`}
+                              >
+                                {label.replace(/_/g, " ")}
+                              </Badge>
+                            </th>
+                          ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.values(comparisonData.models)
+                        .filter((m) => m.status === "success" && m.metrics)
+                        .map((model) => (
+                          <tr key={model.model_name} className="border-b hover:bg-muted/50">
+                            <td className="py-3 px-4 font-medium">{model.display_name}</td>
+                            {model.metrics?.class_labels.map((label) => {
+                              const classMetrics = model.metrics?.per_class_metrics[label];
+                              return (
+                                <td key={label} className="py-3 px-4 text-right">
+                                  {classMetrics ? formatPercent(classMetrics.recall) : "-"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

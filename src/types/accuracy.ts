@@ -26,9 +26,40 @@ export const AccuracyMetricsSchema = z.object({
   computed_at: z.string(),
   f1_macro: z.number().min(0).max(1),
   f1_micro: z.number().min(0).max(1),
+  model_name: z.string().nullable().optional(),
 });
 
 export type AccuracyMetrics = z.infer<typeof AccuracyMetricsSchema>;
+
+// Available model options
+export const MODEL_OPTIONS = [
+  { value: "simplified_3class", label: "Simplified 3-Class", type: "simplified" },
+  { value: "hierarchical_5class", label: "Hierarchical 5-Class", type: "hierarchical" },
+  { value: "simplified_zones", label: "Zone-Based", type: "zones" },
+] as const;
+
+export type ModelValue = (typeof MODEL_OPTIONS)[number]["value"];
+
+// Model comparison response
+export const ModelComparisonResultSchema = z.object({
+  model_name: z.string(),
+  display_name: z.string(),
+  model_type: z.string(),
+  metrics: AccuracyMetricsSchema.nullable(),
+  status: z.enum(["success", "error"]),
+  error: z.string().nullable().optional(),
+});
+
+export type ModelComparisonResult = z.infer<typeof ModelComparisonResultSchema>;
+
+export const ModelComparisonResponseSchema = z.object({
+  models: z.record(z.string(), ModelComparisonResultSchema),
+  time_range_days: z.number().int(),
+  max_crashes: z.number().int(),
+  computed_at: z.string(),
+});
+
+export type ModelComparisonResponse = z.infer<typeof ModelComparisonResponseSchema>;
 
 // A single prediction with actual outcome
 export const PredictionWithActualSchema = z.object({
@@ -103,7 +134,7 @@ export const SAMPLE_SIZE_OPTIONS = [
 
 export type SampleSizeValue = (typeof SAMPLE_SIZE_OPTIONS)[number]["value"];
 
-// Severity class colors for visualization
+// Severity class colors for visualization (3-class)
 export const SEVERITY_COLORS = {
   NO_INJURY: {
     bg: "bg-green-100",
@@ -118,6 +149,31 @@ export const SEVERITY_COLORS = {
     hex: "#eab308",
   },
   SEVERE: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
+    hex: "#ef4444",
+  },
+  // 5-class hierarchical labels
+  REPORTED_NOT_EVIDENT: {
+    bg: "bg-lime-100",
+    text: "text-lime-800",
+    border: "border-lime-300",
+    hex: "#84cc16",
+  },
+  NONINCAPACITATING: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-yellow-300",
+    hex: "#eab308",
+  },
+  INCAPACITATING: {
+    bg: "bg-orange-100",
+    text: "text-orange-800",
+    border: "border-orange-300",
+    hex: "#f97316",
+  },
+  FATAL: {
     bg: "bg-red-100",
     text: "text-red-800",
     border: "border-red-300",
