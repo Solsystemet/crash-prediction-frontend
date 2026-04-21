@@ -1,10 +1,4 @@
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  ZoomControl,
-} from "react-leaflet"
+import { MapContainer, TileLayer, ZoomControl } from "react-leaflet"
 import L from "leaflet"
 import { ZoneLayer } from "./ZoneLayer"
 import type { ZonePredictionResponse } from "@/types/prediction"
@@ -58,13 +52,6 @@ export default function Map({
           selectedZoneId={selectedZoneId}
           zonePredictions={zonePredictions}
         />
-      )}
-
-      {/* Default marker when zones are not shown */}
-      {!showZones && (
-        <Marker position={[41.8781, -87.6298]}>
-          <Popup>Chicago, IL</Popup>
-        </Marker>
       )}
     </MapContainer>
   )
