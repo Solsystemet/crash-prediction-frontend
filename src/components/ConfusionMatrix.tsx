@@ -49,11 +49,17 @@ export function ConfusionMatrix({ metrics }: ConfusionMatrixProps) {
     }
   };
 
-  // Short labels for display
+  // Short labels for display (supports both 3-class and 5-class)
   const shortLabels: Record<string, string> = {
+    // 3-class labels
     NO_INJURY: "None",
     MINOR: "Minor",
     SEVERE: "Severe",
+    // 5-class labels
+    REPORTED_NOT_EVIDENT: "Reported",
+    NONINCAPACITATING: "Non-Incap",
+    INCAPACITATING: "Incap",
+    FATAL: "Fatal",
   };
 
   return (
