@@ -189,17 +189,17 @@ export function PredictionSidebar({
             onValueChange={handleModelChange}
             className="mt-2"
           >
-            <TabsList className="grid h-auto w-full grid-cols-2">
-              <TabsTrigger value="simplified" className="px-2 py-1 text-xs">
+            <TabsList layout="grid" className="grid-cols-2 gap-1">
+              <TabsTrigger value="simplified" className="px-2 py-1.5 text-xs">
                 Severity
               </TabsTrigger>
-              <TabsTrigger value="hierarchical" className="px-2 py-1 text-xs">
+              <TabsTrigger value="hierarchical" className="px-2 py-1.5 text-xs">
                 5-Class
               </TabsTrigger>
-              <TabsTrigger value="zones" className="px-2 py-1 text-xs">
+              <TabsTrigger value="zones" className="px-2 py-1.5 text-xs">
                 Zones
               </TabsTrigger>
-              <TabsTrigger value="regression" className="px-2 py-1 text-xs">
+              <TabsTrigger value="regression" className="px-2 py-1.5 text-xs">
                 Count
               </TabsTrigger>
             </TabsList>
