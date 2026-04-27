@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
 import { getZones } from "@/api/prediction"
 import type { ZoneInfo } from "@/types/prediction"
 
@@ -29,8 +28,6 @@ type ZoneSelectorProps = {
 export function ZoneSelector({
   selectedZoneId,
   onZoneChange,
-  onPredictAllZones,
-  isLoading = false,
 }: ZoneSelectorProps) {
   const [zones, setZones] = useState<ZoneInfo[]>([])
   const [loading, setLoading] = useState(true)

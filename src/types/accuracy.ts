@@ -113,7 +113,7 @@ export const MapDataResponseSchema = z.object({
 
 export type MapDataResponse = z.infer<typeof MapDataResponseSchema>;
 
-// Time range options for the UI
+// Time range options for the UI (kept for backward compatibility)
 export const TIME_RANGE_OPTIONS = [
   { value: 1, label: "Last 24 hours" },
   { value: 7, label: "Last 7 days" },
@@ -122,6 +122,12 @@ export const TIME_RANGE_OPTIONS = [
 ] as const;
 
 export type TimeRangeValue = (typeof TIME_RANGE_OPTIONS)[number]["value"];
+
+// Date range type for custom date selection
+export type DateRangeFilter = {
+  from: Date;
+  to: Date;
+};
 
 // Sample size options for the UI
 export const SAMPLE_SIZE_OPTIONS = [
@@ -198,3 +204,46 @@ export const CORRECTNESS_COLORS = {
     markerClass: "incorrect-marker",
   },
 } as const;
+
+// ROC Curve types
+export const RocCurveSchema = z.object({
+  name: z.string(),
+  auc: z.number().min(0).max(1),
+  color: z.string(),
+  fpr: z.array(z.number()),
+  tpr: z.array(z.number()),
+  n_samples: z.number().int().min(0),
+  n_positive: z.number().int().min(0),
+});
+
+export type RocCurve = z.infer<typeof RocCurveSchema>;
+
+export const RocDataResponseSchema = z.object({
+  model_name: z.string(),
+  model_type: z.string().optional(),
+  curves: z.array(RocCurveSchema),
+  computed_at: z.string(),
+});
+
+export type RocDataResponse = z.infer<typeof RocDataResponseSchema>;
+
+// ROC comparison (multiple models)
+export const RocModelResultSchema = z.object({
+  model_name: z.string(),
+  display_name: z.string(),
+  model_type: z.string(),
+  curves: z.array(RocCurveSchema),
+  status: z.enum(["success", "error"]),
+  error: z.string().nullable().optional(),
+});
+
+export type RocModelResult = z.infer<typeof RocModelResultSchema>;
+
+export const RocComparisonResponseSchema = z.object({
+  models: z.record(z.string(), RocModelResultSchema),
+  time_range_days: z.number().int(),
+  max_crashes: z.number().int(),
+  computed_at: z.string(),
+});
+
+export type RocComparisonResponse = z.infer<typeof RocComparisonResponseSchema>;
