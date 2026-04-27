@@ -30,7 +30,7 @@ import type {
   ModelType,
   ZonePredictionResponse,
 } from "@/types/prediction"
-import { MODEL_TYPE_INFO, DEFAULT_PREDICTION_REQUEST } from "@/types/prediction"
+import { MODEL_TYPE_INFO } from "@/types/prediction"
 
 type PredictionSidebarProps = {
   children: React.ReactNode
@@ -66,9 +66,7 @@ export function PredictionSidebar({
   const [zonePredictions, setZonePredictions] = useState<
     Map<number, ZonePredictionResponse>
   >(new Map())
-  const [lastFormData, setLastFormData] = useState<PredictionRequest | null>(
-    null
-  )
+  const [, setLastFormData] = useState<PredictionRequest | null>(null)
 
   // Load feature options on mount
   useEffect(() => {
