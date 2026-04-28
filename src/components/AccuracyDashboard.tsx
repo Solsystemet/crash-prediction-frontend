@@ -4,91 +4,136 @@
  * Supports multiple models with comparison view.
  */
 
-import { useState, useCallback, lazy, Suspense } from "react";
-import { Link } from "@tanstack/react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useCallback } from "react"
+import type { DateRange } from "react-day-picker"
+import { subDays } from "date-fns"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConfusionMatrix } from "@/components/ConfusionMatrix"
+import { PredictionsTable } from "@/components/PredictionsTable"
+import { ROCCurveChart } from "@/components/ROCCurveChart"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ConfusionMatrix } from "@/components/ConfusionMatrix";
-import { PredictionsTable } from "@/components/PredictionsTable";
-import { getAccuracyMetrics, getModelComparison, type MapFilter } from "@/api/accuracy";
+  getAccuracyMetrics,
+  getModelComparison,
+  getROCData,
+  getROCComparison,
+  type MapFilter,
+  type DateFilterOptions,
+} from "@/api/accuracy"
 import type {
   AccuracyResponse,
   PredictionWithActual,
-  TimeRangeValue,
   MapPrediction,
   ModelValue,
   ModelComparisonResponse,
-} from "@/types/accuracy";
-import { TIME_RANGE_OPTIONS, SEVERITY_COLORS, SAMPLE_SIZE_OPTIONS, MODEL_OPTIONS, type SampleSizeValue } from "@/types/accuracy";
+  RocDataResponse,
+  RocComparisonResponse,
+  SampleSizeValue,
+} from "@/types/accuracy"
+import {
+  DashboardHeader,
+  MetricsSummaryCards,
+  PerClassMetricsCard,
+  ModelComparisonTable,
+  PerClassRecallTable,
+  AccuracyMapView,
+  EmptyState,
+  LoadingState,
+  ErrorState,
+  type ViewMode,
+} from "@/components/accuracy"
 
-// Lazy load map component for better initial load
-const AccuracyMap = lazy(() =>
-  import("@/components/AccuracyMap").then((m) => ({ default: m.AccuracyMap }))
-);
-
-type ViewMode = "dashboard" | "map" | "table" | "compare";
+// Default to last 7 days
+const getDefaultDateRange = (): DateRange => ({
+  from: subDays(new Date(), 7),
+  to: new Date(),
+})
 
 export function AccuracyDashboard() {
-  const [timeRange, setTimeRange] = useState<TimeRangeValue>(7);
-  const [sampleSize, setSampleSize] = useState<SampleSizeValue>(2000);
-  const [selectedModel, setSelectedModel] = useState<ModelValue>("simplified_3class");
-  const [data, setData] = useState<AccuracyResponse | null>(null);
-  const [comparisonData, setComparisonData] = useState<ModelComparisonResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("dashboard");
-  const [mapFilter, setMapFilter] = useState<MapFilter>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(
+    getDefaultDateRange()
+  )
+  const [sampleSize, setSampleSize] = useState<SampleSizeValue>(2000)
+  const [selectedModel, setSelectedModel] =
+    useState<ModelValue>("simplified_3class")
+  const [data, setData] = useState<AccuracyResponse | null>(null)
+  const [comparisonData, setComparisonData] =
+    useState<ModelComparisonResponse | null>(null)
+  const [rocData, setRocData] = useState<RocDataResponse | null>(null)
+  const [rocComparisonData, setRocComparisonData] =
+    useState<RocComparisonResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>("dashboard")
+  const [mapFilter, setMapFilter] = useState<MapFilter>("all")
+
+  // Build date filter options from selected date range
+  const getDateFilter = useCallback((): DateFilterOptions => {
+    if (dateRange?.from && dateRange?.to) {
+      return { dateRange: { from: dateRange.from, to: dateRange.to } }
+    }
+    // Fallback to 7 days if no range selected
+    return { days: 7 }
+  }, [dateRange])
 
   const fetchAccuracy = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true)
+    setError(null)
+
+    const dateFilter = getDateFilter()
 
     try {
       if (viewMode === "compare") {
-        const result = await getModelComparison(timeRange, sampleSize);
-        setComparisonData(result);
-        setData(null);
+        // Fetch both comparison metrics and ROC data
+        const [metricsResult, rocResult] = await Promise.all([
+          getModelComparison(dateFilter, sampleSize),
+          getROCComparison(dateFilter, sampleSize),
+        ])
+        setComparisonData(metricsResult)
+        setRocComparisonData(rocResult)
+        setData(null)
+        setRocData(null)
       } else {
-        const result = await getAccuracyMetrics(timeRange, sampleSize, selectedModel);
-        setData(result);
-        setComparisonData(null);
+        // Fetch both accuracy metrics and ROC data for selected model
+        const [metricsResult, rocResult] = await Promise.all([
+          getAccuracyMetrics(dateFilter, sampleSize, selectedModel),
+          getROCData(dateFilter, sampleSize, selectedModel),
+        ])
+        setData(metricsResult)
+        setRocData(rocResult)
+        setComparisonData(null)
+        setRocComparisonData(null)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch accuracy");
-      setData(null);
-      setComparisonData(null);
+      setError(err instanceof Error ? err.message : "Failed to fetch accuracy")
+      setData(null)
+      setComparisonData(null)
+      setRocData(null)
+      setRocComparisonData(null)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [timeRange, sampleSize, selectedModel, viewMode]);
+  }, [getDateFilter, sampleSize, selectedModel, viewMode])
 
   // Get filtered predictions for map
   const getFilteredMapPredictions = (): MapPrediction[] => {
-    if (!data) return [];
+    if (!data) return []
 
     let filtered = data.predictions.filter(
-      (p): p is PredictionWithActual & { latitude: number; longitude: number } =>
+      (
+        p
+      ): p is PredictionWithActual & { latitude: number; longitude: number } =>
         p.latitude !== null &&
         p.longitude !== null &&
         p.latitude > 41.6 &&
         p.latitude < 42.1 &&
         p.longitude > -88.0 &&
         p.longitude < -87.4
-    );
+    )
 
     if (mapFilter === "correct") {
-      filtered = filtered.filter((p) => p.is_correct);
+      filtered = filtered.filter((p) => p.is_correct)
     } else if (mapFilter === "incorrect") {
-      filtered = filtered.filter((p) => !p.is_correct);
+      filtered = filtered.filter((p) => !p.is_correct)
     }
 
     return filtered.map((p) => ({
@@ -102,355 +147,76 @@ export function AccuracyDashboard() {
       longitude: p.longitude,
       weather_condition: p.weather_condition,
       lighting_condition: p.lighting_condition,
-    }));
-  };
-
-  // Format percentage
-  const formatPercent = (value: number) => `${Math.round(value * 100)}%`;
+    }))
+  }
 
   return (
     <div className="flex h-screen flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 border-b bg-background px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                Back to Prediction
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-lg font-semibold">Model Accuracy Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Evaluate prediction accuracy using real Chicago crash data
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* View mode toggle */}
-            <Tabs
-              value={viewMode}
-              onValueChange={(v) => setViewMode(v as ViewMode)}
-            >
-              <TabsList>
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="map">Map</TabsTrigger>
-                <TabsTrigger value="table">Table</TabsTrigger>
-                <TabsTrigger value="compare">Compare</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Model selector - only show when not in compare mode */}
-            {viewMode !== "compare" && (
-              <Select
-                value={selectedModel}
-                onValueChange={(v) => setSelectedModel(v as ModelValue)}
-              >
-                <SelectTrigger className="w-[170px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODEL_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {/* Time range selector */}
-            <Select
-              value={timeRange.toString()}
-              onValueChange={(v) => setTimeRange(Number(v) as TimeRangeValue)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_RANGE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value.toString()}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Sample size selector */}
-            <Select
-              value={sampleSize.toString()}
-              onValueChange={(v) => setSampleSize(Number(v) as SampleSizeValue)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SAMPLE_SIZE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value.toString()}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Fetch button */}
-            <Button onClick={fetchAccuracy} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                  Loading...
-                </>
-              ) : viewMode === "compare" ? (
-                "Compare Models"
-              ) : (
-                "Fetch Data"
-              )}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        sampleSize={sampleSize}
+        onSampleSizeChange={setSampleSize}
+        onFetchData={fetchAccuracy}
+        isLoading={isLoading}
+      />
 
       {/* Main content */}
       <div className="flex-1 overflow-hidden p-4">
-        {error && (
-          <Card className="mb-4 border-destructive">
-            <CardContent className="py-3">
-              <p className="text-sm text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+        {error && <ErrorState message={error} />}
 
         {!data && !comparisonData && !isLoading && !error && (
-          <Card className="flex h-full items-center justify-center">
-            <CardContent>
-              <div className="text-center">
-                <p className="text-muted-foreground">
-                  {viewMode === "compare"
-                    ? 'Click "Compare Models" to evaluate all models on the same dataset.'
-                    : 'Click "Fetch Data" to load accuracy metrics from recent Chicago crash data.'}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  This will fetch real crash data from the City of Chicago's
-                  open data portal and compare model predictions against actual
-                  outcomes.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <EmptyState isCompareMode={viewMode === "compare"} />
         )}
 
-        {isLoading && (
-          <Card className="flex h-full items-center justify-center">
-            <CardContent>
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                <p className="text-muted-foreground">
-                  Fetching data from Chicago API...
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  This may take a moment for larger time ranges.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {isLoading && <LoadingState />}
 
         {data && !isLoading && (
           <>
             {viewMode === "dashboard" && (
-              <div className="grid h-full gap-4 lg:grid-cols-2">
-                {/* Left column: Metrics */}
-                <div className="flex flex-col gap-4 overflow-auto">
-                  {/* Summary cards */}
-                  <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                          Overall Accuracy
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatPercent(data.metrics.overall_accuracy)}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                          F1 Macro
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatPercent(data.metrics.f1_macro)}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                          F1 Micro
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {formatPercent(data.metrics.f1_micro)}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                          Samples Evaluated
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {data.metrics.sample_count.toLocaleString()}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-xs font-medium text-muted-foreground">
-                          Time Range
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {data.metrics.time_range_days} days
-                        </div>
-                      </CardContent>
-                    </Card>
+              <div
+                className="grid h-full gap-4 lg:grid-cols-2"
+                style={{ gridTemplateRows: "1fr" }}
+              >
+                {/* Left column: Metrics - scrollable */}
+                <div className="min-h-0 overflow-y-auto pr-2">
+                  <div className="flex flex-col gap-4">
+                    <MetricsSummaryCards metrics={data.metrics} />
+                    <PerClassMetricsCard
+                      perClassMetrics={data.metrics.per_class_metrics}
+                    />
+                    <ConfusionMatrix metrics={data.metrics} />
+                    <ROCCurveChart data={rocData} title="ROC Curves" />
                   </div>
-
-                  {/* Per-class metrics */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Per-Class Metrics
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {Object.entries(data.metrics.per_class_metrics).map(
-                          ([className, metrics]) => (
-                            <div
-                              key={className}
-                              className="flex items-center justify-between rounded-lg border p-3"
-                            >
-                              <Badge
-                                className={`${SEVERITY_COLORS[className as keyof typeof SEVERITY_COLORS]?.bg || "bg-gray-100"} ${SEVERITY_COLORS[className as keyof typeof SEVERITY_COLORS]?.text || "text-gray-800"}`}
-                              >
-                                {className.replace("_", " ")}
-                              </Badge>
-                              <div className="flex gap-4 text-sm">
-                                <div>
-                                  <span className="text-muted-foreground">
-                                    Precision:{" "}
-                                  </span>
-                                  <span className="font-medium">
-                                    {formatPercent(metrics.precision)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">
-                                    Recall:{" "}
-                                  </span>
-                                  <span className="font-medium">
-                                    {formatPercent(metrics.recall)}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">
-                                    F1:{" "}
-                                  </span>
-                                  <span className="font-medium">
-                                    {formatPercent(metrics.f1_score)}
-                                  </span>
-                                </div>
-                                <div className="text-muted-foreground">
-                                  n={metrics.support}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Confusion Matrix */}
-                  <ConfusionMatrix metrics={data.metrics} />
                 </div>
 
                 {/* Right column: Map preview */}
-                <div className="hidden lg:block">
-                  <Suspense
-                    fallback={
-                      <Card className="flex h-full items-center justify-center">
-                        <CardContent>Loading map...</CardContent>
-                      </Card>
-                    }
-                  >
-                    <AccuracyMap
-                      predictions={getFilteredMapPredictions()}
-                      isLoading={false}
-                    />
-                  </Suspense>
+                <div className="hidden min-h-0 lg:block">
+                  <AccuracyMapView
+                    predictions={getFilteredMapPredictions()}
+                    mapFilter={mapFilter}
+                    onFilterChange={setMapFilter}
+                    isPreview
+                  />
                 </div>
               </div>
             )}
 
             {viewMode === "map" && (
-              <div className="h-full flex flex-col gap-4">
-                {/* Map filter controls */}
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={mapFilter}
-                    onValueChange={(v) => setMapFilter(v as MapFilter)}
-                  >
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Predictions</SelectItem>
-                      <SelectItem value="correct">Correct Only</SelectItem>
-                      <SelectItem value="incorrect">Incorrect Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    {getFilteredMapPredictions().length} predictions shown
-                  </span>
-                </div>
-
-                <div className="flex-1">
-                  <Suspense
-                    fallback={
-                      <Card className="flex h-full items-center justify-center">
-                        <CardContent>Loading map...</CardContent>
-                      </Card>
-                    }
-                  >
-                    <AccuracyMap
-                      predictions={getFilteredMapPredictions()}
-                      isLoading={false}
-                    />
-                  </Suspense>
-                </div>
-              </div>
+              <AccuracyMapView
+                predictions={getFilteredMapPredictions()}
+                mapFilter={mapFilter}
+                onFilterChange={setMapFilter}
+              />
             )}
 
             {viewMode === "table" && (
-              <Card className="h-full flex flex-col">
-                <CardHeader className="pb-2 flex-shrink-0">
+              <Card className="flex h-full flex-col">
+                <CardHeader className="flex-shrink-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Individual Predictions
                   </CardTitle>
@@ -465,122 +231,18 @@ export function AccuracyDashboard() {
 
         {/* Comparison View */}
         {viewMode === "compare" && comparisonData && !isLoading && (
-          <div className="flex flex-col gap-4 overflow-auto h-full">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">
-                  Model Comparison
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Evaluated on {comparisonData.max_crashes.toLocaleString()} crashes from the last {comparisonData.time_range_days} days
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium">Model</th>
-                        <th className="text-left py-3 px-4 font-medium">Type</th>
-                        <th className="text-right py-3 px-4 font-medium">Accuracy</th>
-                        <th className="text-right py-3 px-4 font-medium">F1 Macro</th>
-                        <th className="text-right py-3 px-4 font-medium">F1 Micro</th>
-                        <th className="text-right py-3 px-4 font-medium">Samples</th>
-                        <th className="text-center py-3 px-4 font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.values(comparisonData.models).map((model) => (
-                        <tr key={model.model_name} className="border-b hover:bg-muted/50">
-                          <td className="py-3 px-4 font-medium">{model.display_name}</td>
-                          <td className="py-3 px-4">
-                            <Badge variant="outline" className="capitalize">
-                              {model.model_type}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {model.metrics ? formatPercent(model.metrics.overall_accuracy) : "-"}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {model.metrics ? formatPercent(model.metrics.f1_macro) : "-"}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {model.metrics ? formatPercent(model.metrics.f1_micro) : "-"}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {model.metrics ? model.metrics.sample_count.toLocaleString() : "-"}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            {model.status === "success" ? (
-                              <Badge className="bg-green-100 text-green-800">Success</Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-800" title={model.error || undefined}>
-                                Error
-                              </Badge>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Per-class recall comparison */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base font-medium">
-                  Per-Class Recall Comparison
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Shows how well each model identifies each severity class
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium">Model</th>
-                        {/* Dynamic headers based on class labels from first successful model */}
-                        {Object.values(comparisonData.models)
-                          .find((m) => m.metrics)
-                          ?.metrics?.class_labels.map((label) => (
-                            <th key={label} className="text-right py-3 px-4 font-medium">
-                              <Badge
-                                className={`${SEVERITY_COLORS[label as keyof typeof SEVERITY_COLORS]?.bg || "bg-gray-100"} ${SEVERITY_COLORS[label as keyof typeof SEVERITY_COLORS]?.text || "text-gray-800"}`}
-                              >
-                                {label.replace(/_/g, " ")}
-                              </Badge>
-                            </th>
-                          ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.values(comparisonData.models)
-                        .filter((m) => m.status === "success" && m.metrics)
-                        .map((model) => (
-                          <tr key={model.model_name} className="border-b hover:bg-muted/50">
-                            <td className="py-3 px-4 font-medium">{model.display_name}</td>
-                            {model.metrics?.class_labels.map((label) => {
-                              const classMetrics = model.metrics?.per_class_metrics[label];
-                              return (
-                                <td key={label} className="py-3 px-4 text-right">
-                                  {classMetrics ? formatPercent(classMetrics.recall) : "-"}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="h-full min-h-0 overflow-y-auto">
+            <div className="flex flex-col gap-4">
+              <ModelComparisonTable data={comparisonData} />
+              <PerClassRecallTable data={comparisonData} />
+              <ROCCurveChart
+                comparisonData={rocComparisonData}
+                title="ROC Curves Comparison"
+              />
+            </div>
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

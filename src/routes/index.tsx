@@ -4,7 +4,6 @@ import {
   PredictionSidebar,
   type ZoneState,
 } from "@/components/PredictionSidebar"
-import type { ZonePredictionResponse } from "@/types/prediction"
 
 const MapComponent = lazy(() => import("../components/Map"))
 

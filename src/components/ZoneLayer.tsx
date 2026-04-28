@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from "react"
-import { CircleMarker, Popup, useMap } from "react-leaflet"
+import { CircleMarker, Popup } from "react-leaflet"
 import { getZones } from "@/api/prediction"
 import type {
   ZoneInfo,
@@ -42,7 +42,6 @@ export function ZoneLayer({
   const [zones, setZones] = useState<ZoneInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const map = useMap()
 
   // Fetch zones on mount
   useEffect(() => {
