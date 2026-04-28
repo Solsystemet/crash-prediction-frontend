@@ -393,6 +393,7 @@ export function PredictionResult({
     return <RegressionResultDisplay result={result} />
   }
 
+  // Both hierarchical and neural network use the same 5-class display
   if (isHierarchicalResponse(result)) {
     return <HierarchicalResultDisplay result={result} />
   }

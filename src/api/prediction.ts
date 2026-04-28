@@ -10,6 +10,7 @@ import type {
   AnyPredictionResponse,
   ZonePredictionResponse,
   RegressionPredictionResponse,
+  HierarchicalPredictionResponse,
   ZonesResponse,
   ZonePredictionByIdRequest,
   AllZonesPredictionResponse,
@@ -98,6 +99,18 @@ export async function predictRegression(
     ...request,
     model_type: "regression",
   }) as Promise<RegressionPredictionResponse>
+}
+
+/**
+ * Make a neural network prediction (5-class severity).
+ */
+export async function predictNeuralNetwork(
+  request: PredictionRequest
+): Promise<HierarchicalPredictionResponse> {
+  return predict({
+    ...request,
+    model_type: "multiclass_nn",
+  }) as Promise<HierarchicalPredictionResponse>
 }
 
 /**

@@ -8,6 +8,7 @@ import { z } from "zod"
 export const ModelTypeSchema = z.enum([
   "simplified",
   "hierarchical",
+  "multiclass_nn",
   "zones",
   "regression",
 ])
@@ -25,6 +26,10 @@ export const MODEL_TYPE_INFO: Record<
   hierarchical: {
     label: "Hierarchical (5-Class)",
     description: "Detailed 5-level severity prediction",
+  },
+  multiclass_nn: {
+    label: "Neural Network",
+    description: "5-class severity using deep learning",
   },
   zones: {
     label: "Zone-Based",
@@ -319,6 +324,15 @@ export function isHierarchicalResponse(
     "probabilities" in response &&
     "incapacitating" in
       (response as HierarchicalPredictionResponse).probabilities
+  )
+}
+
+export function isNeuralNetworkResponse(
+  response: AnyPredictionResponse
+): response is HierarchicalPredictionResponse {
+  return (
+    isHierarchicalResponse(response) &&
+    response.model_name.toLowerCase().includes("nn")
   )
 }
 
