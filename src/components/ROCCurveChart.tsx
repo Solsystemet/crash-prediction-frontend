@@ -119,29 +119,31 @@ export function ROCCurveChart({
           </p>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+          <ResponsiveContainer width="100%" height={380}>
+            <LineChart data={chartData} margin={{ top: 5, right: 30, bottom: 60, left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis
                 dataKey="fpr"
                 type="number"
                 domain={[0, 1]}
                 tickFormatter={(v) => v.toFixed(1)}
-                label={{ value: "False Positive Rate", position: "bottom", offset: -5 }}
                 fontSize={11}
+                label={{ value: "False Positive Rate", position: "insideBottom", offset: -5, fontSize: 11 }}
               />
               <YAxis
                 type="number"
                 domain={[0, 1]}
                 tickFormatter={(v) => v.toFixed(1)}
-                label={{ value: "True Positive Rate", angle: -90, position: "insideLeft" }}
                 fontSize={11}
+                label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", fontSize: 11, style: { textAnchor: "middle" } }}
               />
               <Tooltip
                 formatter={(value) => [(value as number).toFixed(3), "TPR"]}
                 labelFormatter={(fpr) => `FPR: ${Number(fpr).toFixed(3)}`}
               />
               <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ paddingTop: 25 }}
                 formatter={(value) => {
                   const curve = data.curves.find((c) => c.name === value);
                   return curve ? `${value} (AUC: ${curve.auc.toFixed(3)})` : value;
@@ -229,29 +231,31 @@ export function ROCCurveChart({
           </p>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+          <ResponsiveContainer width="100%" height={380}>
+            <LineChart data={chartData} margin={{ top: 5, right: 30, bottom: 60, left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
               <XAxis
                 dataKey="fpr"
                 type="number"
                 domain={[0, 1]}
                 tickFormatter={(v) => v.toFixed(1)}
-                label={{ value: "False Positive Rate", position: "bottom", offset: -5 }}
                 fontSize={11}
+                label={{ value: "False Positive Rate", position: "insideBottom", offset: -5, fontSize: 11 }}
               />
               <YAxis
                 type="number"
                 domain={[0, 1]}
                 tickFormatter={(v) => v.toFixed(1)}
-                label={{ value: "True Positive Rate", angle: -90, position: "insideLeft" }}
                 fontSize={11}
+                label={{ value: "True Positive Rate", angle: -90, position: "insideLeft", fontSize: 11, style: { textAnchor: "middle" } }}
               />
               <Tooltip
                 formatter={(value, name) => [(value as number).toFixed(3), name]}
                 labelFormatter={(fpr) => `FPR: ${Number(fpr).toFixed(3)}`}
               />
               <Legend
+                verticalAlign="bottom"
+                wrapperStyle={{ paddingTop: 25 }}
                 formatter={(value) => {
                   const curveInfo = allCurves.find((c) => c.name === value);
                   return curveInfo ? `${value} (AUC: ${curveInfo.curve.auc.toFixed(3)})` : value;
