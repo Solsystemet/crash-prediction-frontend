@@ -6,6 +6,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {
   SEVERITY_COLORS,
   type ModelComparisonResponse,
   type ModelComparisonResult,
@@ -162,12 +168,26 @@ export function PerClassRecallTable({ data }: PerClassRecallTableProps) {
                       <div className="flex items-center gap-2">
                         {model.display_name}
                         {isAggregated && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-normal"
-                          >
-                            Aggregated
-                          </Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs font-normal cursor-help"
+                                >
+                                  Aggregated
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p>
+                                  5-class metrics (NO_INJURY, REPORTED_NOT_EVIDENT,
+                                  NONINCAPACITATING, INCAPACITATING, FATAL) are
+                                  aggregated to 3-class (NO_INJURY, MINOR, SEVERE)
+                                  for fair comparison across models.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                     </td>
