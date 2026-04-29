@@ -53,9 +53,9 @@ export function DashboardHeader({
     <header className="flex-shrink-0 border-b bg-background px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/">
+          <Link to="/playground">
             <Button variant="ghost" size="sm">
-              Back to Prediction
+              Open Playground
             </Button>
           </Link>
           <div>

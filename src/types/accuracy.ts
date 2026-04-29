@@ -2,8 +2,8 @@
  * Types and Zod schemas for the accuracy evaluation API.
  */
 
-import { z } from "zod";
-import { SeverityClassSchema } from "./prediction";
+import { z } from "zod"
+import { SeverityClassSchema } from "./prediction"
 
 // Class metrics for a single severity class
 export const ClassMetricsSchema = z.object({
@@ -11,9 +11,9 @@ export const ClassMetricsSchema = z.object({
   recall: z.number().min(0).max(1),
   f1_score: z.number().min(0).max(1),
   support: z.number().int().min(0),
-});
+})
 
-export type ClassMetrics = z.infer<typeof ClassMetricsSchema>;
+export type ClassMetrics = z.infer<typeof ClassMetricsSchema>
 
 // Overall accuracy metrics
 export const AccuracyMetricsSchema = z.object({
@@ -27,18 +27,31 @@ export const AccuracyMetricsSchema = z.object({
   f1_macro: z.number().min(0).max(1),
   f1_micro: z.number().min(0).max(1),
   model_name: z.string().nullable().optional(),
-});
+})
 
-export type AccuracyMetrics = z.infer<typeof AccuracyMetricsSchema>;
+export type AccuracyMetrics = z.infer<typeof AccuracyMetricsSchema>
 
 // Available model options
 export const MODEL_OPTIONS = [
-  { value: "simplified_3class", label: "Simplified 3-Class", type: "simplified" },
-  { value: "hierarchical_5class", label: "Hierarchical 5-Class", type: "hierarchical" },
+  {
+    value: "simplified_3class",
+    label: "Simplified 3-Class",
+    type: "simplified",
+  },
+  {
+    value: "hierarchical_5class",
+    label: "Hierarchical 5-Class",
+    type: "hierarchical",
+  },
+  {
+    value: "multiclass_nn",
+    label: "Neural Network 5-Class",
+    type: "multiclass_nn",
+  },
   { value: "simplified_zones", label: "Zone-Based", type: "zones" },
-] as const;
+] as const
 
-export type ModelValue = (typeof MODEL_OPTIONS)[number]["value"];
+export type ModelValue = (typeof MODEL_OPTIONS)[number]["value"]
 
 // Model comparison response
 export const ModelComparisonResultSchema = z.object({
@@ -48,18 +61,20 @@ export const ModelComparisonResultSchema = z.object({
   metrics: AccuracyMetricsSchema.nullable(),
   status: z.enum(["success", "error"]),
   error: z.string().nullable().optional(),
-});
+})
 
-export type ModelComparisonResult = z.infer<typeof ModelComparisonResultSchema>;
+export type ModelComparisonResult = z.infer<typeof ModelComparisonResultSchema>
 
 export const ModelComparisonResponseSchema = z.object({
   models: z.record(z.string(), ModelComparisonResultSchema),
   time_range_days: z.number().int(),
   max_crashes: z.number().int(),
   computed_at: z.string(),
-});
+})
 
-export type ModelComparisonResponse = z.infer<typeof ModelComparisonResponseSchema>;
+export type ModelComparisonResponse = z.infer<
+  typeof ModelComparisonResponseSchema
+>
 
 // A single prediction with actual outcome
 export const PredictionWithActualSchema = z.object({
@@ -75,17 +90,17 @@ export const PredictionWithActualSchema = z.object({
   lighting_condition: z.string().nullable(),
   first_crash_type: z.string().nullable().optional(),
   posted_speed_limit: z.number().int().nullable().optional(),
-});
+})
 
-export type PredictionWithActual = z.infer<typeof PredictionWithActualSchema>;
+export type PredictionWithActual = z.infer<typeof PredictionWithActualSchema>
 
 // Full accuracy response
 export const AccuracyResponseSchema = z.object({
   metrics: AccuracyMetricsSchema,
   predictions: z.array(PredictionWithActualSchema),
-});
+})
 
-export type AccuracyResponse = z.infer<typeof AccuracyResponseSchema>;
+export type AccuracyResponse = z.infer<typeof AccuracyResponseSchema>
 
 // Map prediction data
 export const MapPredictionSchema = z.object({
@@ -99,9 +114,9 @@ export const MapPredictionSchema = z.object({
   longitude: z.number(),
   weather_condition: z.string().nullable(),
   lighting_condition: z.string().nullable(),
-});
+})
 
-export type MapPrediction = z.infer<typeof MapPredictionSchema>;
+export type MapPrediction = z.infer<typeof MapPredictionSchema>
 
 // Map data response
 export const MapDataResponseSchema = z.object({
@@ -109,9 +124,9 @@ export const MapDataResponseSchema = z.object({
   total_count: z.number().int(),
   correct_count: z.number().int(),
   incorrect_count: z.number().int(),
-});
+})
 
-export type MapDataResponse = z.infer<typeof MapDataResponseSchema>;
+export type MapDataResponse = z.infer<typeof MapDataResponseSchema>
 
 // Time range options for the UI (kept for backward compatibility)
 export const TIME_RANGE_OPTIONS = [
@@ -119,15 +134,15 @@ export const TIME_RANGE_OPTIONS = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
   { value: 90, label: "Last 90 days" },
-] as const;
+] as const
 
-export type TimeRangeValue = (typeof TIME_RANGE_OPTIONS)[number]["value"];
+export type TimeRangeValue = (typeof TIME_RANGE_OPTIONS)[number]["value"]
 
 // Date range type for custom date selection
 export type DateRangeFilter = {
-  from: Date;
-  to: Date;
-};
+  from: Date
+  to: Date
+}
 
 // Sample size options for the UI
 export const SAMPLE_SIZE_OPTIONS = [
@@ -136,9 +151,9 @@ export const SAMPLE_SIZE_OPTIONS = [
   { value: 2000, label: "2,000 samples" },
   { value: 5000, label: "5,000 samples" },
   { value: 10000, label: "10,000 samples" },
-] as const;
+] as const
 
-export type SampleSizeValue = (typeof SAMPLE_SIZE_OPTIONS)[number]["value"];
+export type SampleSizeValue = (typeof SAMPLE_SIZE_OPTIONS)[number]["value"]
 
 // Severity class colors for visualization (3-class)
 export const SEVERITY_COLORS = {
@@ -185,7 +200,7 @@ export const SEVERITY_COLORS = {
     border: "border-red-300",
     hex: "#ef4444",
   },
-} as const;
+} as const
 
 // Prediction correctness colors
 export const CORRECTNESS_COLORS = {
@@ -203,7 +218,7 @@ export const CORRECTNESS_COLORS = {
     hex: "#ef4444",
     markerClass: "incorrect-marker",
   },
-} as const;
+} as const
 
 // ROC Curve types
 export const RocCurveSchema = z.object({
@@ -214,18 +229,18 @@ export const RocCurveSchema = z.object({
   tpr: z.array(z.number()),
   n_samples: z.number().int().min(0),
   n_positive: z.number().int().min(0),
-});
+})
 
-export type RocCurve = z.infer<typeof RocCurveSchema>;
+export type RocCurve = z.infer<typeof RocCurveSchema>
 
 export const RocDataResponseSchema = z.object({
   model_name: z.string(),
   model_type: z.string().optional(),
   curves: z.array(RocCurveSchema),
   computed_at: z.string(),
-});
+})
 
-export type RocDataResponse = z.infer<typeof RocDataResponseSchema>;
+export type RocDataResponse = z.infer<typeof RocDataResponseSchema>
 
 // ROC comparison (multiple models)
 export const RocModelResultSchema = z.object({
@@ -235,15 +250,15 @@ export const RocModelResultSchema = z.object({
   curves: z.array(RocCurveSchema),
   status: z.enum(["success", "error"]),
   error: z.string().nullable().optional(),
-});
+})
 
-export type RocModelResult = z.infer<typeof RocModelResultSchema>;
+export type RocModelResult = z.infer<typeof RocModelResultSchema>
 
 export const RocComparisonResponseSchema = z.object({
   models: z.record(z.string(), RocModelResultSchema),
   time_range_days: z.number().int(),
   max_crashes: z.number().int(),
   computed_at: z.string(),
-});
+})
 
-export type RocComparisonResponse = z.infer<typeof RocComparisonResponseSchema>;
+export type RocComparisonResponse = z.infer<typeof RocComparisonResponseSchema>

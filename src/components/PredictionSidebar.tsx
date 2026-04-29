@@ -292,7 +292,7 @@ export function PredictionSidebar({
             <SidebarTrigger />
             <span className="text-sm font-medium">Crash Prediction Map</span>
           </div>
-          <Link to="/accuracy">
+          <Link to="/">
             <Button variant="outline" size="sm">
               Model Accuracy
             </Button>
