@@ -32,7 +32,6 @@ export function ModelComparisonTable({ data }: ModelComparisonTableProps) {
             <thead>
               <tr className="border-b">
                 <th className="px-4 py-3 text-left font-medium">Model</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
                 <th className="px-4 py-3 text-right font-medium">Accuracy</th>
                 <th className="px-4 py-3 text-right font-medium">F1 Macro</th>
                 <th className="px-4 py-3 text-right font-medium">F1 Micro</th>
@@ -48,11 +47,6 @@ export function ModelComparisonTable({ data }: ModelComparisonTableProps) {
                 >
                   <td className="px-4 py-3 font-medium">
                     {model.display_name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className="capitalize">
-                      {model.model_type}
-                    </Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
                     {model.metrics
