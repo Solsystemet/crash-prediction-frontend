@@ -1,21 +1,11 @@
-# TanStack Start + shadcn/ui
+# Crash Prediction Frontend
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+The purpose of the crash prediction frontend is to visualize and compare the different models performers of the different models, it also lets you play with the model on the playground.
 
-## Adding components
+## Setup
 
-To add components to your app, run the following command:
+To run the frontend, you need to run:
 
-```bash
-npx shadcn@latest add button
-```
-
-This will place the ui components in the `components` directory.
-
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+```sh
+bun run dev
 ```
