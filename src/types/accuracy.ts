@@ -43,8 +43,8 @@ export const MODEL_OPTIONS = [
   { value: "tuned_lgbm", label: "LightGBM (Tuned)", type: "tuned" },
   { value: "tuned_xgb", label: "XGBoost (Tuned)", type: "tuned" },
   { value: "tuned_catboost", label: "CatBoost (Tuned)", type: "tuned" },
+  { value: "tuned_rf", label: "Random Forest (Tuned)", type: "tuned" },
   { value: "tabnet", label: "TabNet", type: "deep" },
-  { value: "stacking_ensemble", label: "Stacking Ensemble", type: "ensemble" },
 ] as const
 
 export type ModelValue = (typeof MODEL_OPTIONS)[number]["value"]
