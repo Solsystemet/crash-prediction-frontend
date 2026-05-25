@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { DatasetModelSelector } from "./DatasetModelSelector"
 import {
   SAMPLE_SIZE_OPTIONS,
-  MODEL_OPTIONS,
   type SampleSizeValue,
   type ModelValue,
 } from "@/types/accuracy"
@@ -82,21 +82,12 @@ export function DashboardHeader({
 
           {/* Model selector - only show when not in compare mode */}
           {viewMode !== "compare" && (
-            <Select
-              value={selectedModel}
-              onValueChange={(v) => onModelChange(v as ModelValue)}
-            >
-              <SelectTrigger className="w-[170px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MODEL_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DatasetModelSelector
+              selectedModel={selectedModel}
+              onModelChange={onModelChange}
+              disabled={isLoading}
+              className="w-[280px]"
+            />
           )}
 
           {/* Date range picker */}

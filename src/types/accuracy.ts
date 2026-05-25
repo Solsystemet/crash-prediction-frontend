@@ -32,6 +32,7 @@ export const AccuracyMetricsSchema = z.object({
 export type AccuracyMetrics = z.infer<typeof AccuracyMetricsSchema>
 
 // Available model options for comparison (3-class models only)
+// NOTE: This is now a fallback - prefer fetching from /api/models
 export const MODEL_OPTIONS = [
   {
     value: "simplified_3class",
@@ -47,7 +48,8 @@ export const MODEL_OPTIONS = [
   { value: "tabnet", label: "TabNet", type: "deep" },
 ] as const
 
-export type ModelValue = (typeof MODEL_OPTIONS)[number]["value"]
+// ModelValue can now be any string key from dynamic models
+export type ModelValue = string
 
 // Model comparison response
 export const ModelComparisonResultSchema = z.object({
@@ -150,6 +152,57 @@ export const SAMPLE_SIZE_OPTIONS = [
 ] as const
 
 export type SampleSizeValue = (typeof SAMPLE_SIZE_OPTIONS)[number]["value"]
+
+// ============================================================================
+// Available Models Types (dynamic from API)
+// ============================================================================
+
+// Dataset configuration for a model
+export const DatasetConfigSchema = z.object({
+  use_vehicles: z.boolean(),
+  use_people: z.boolean(),
+  use_weather: z.boolean(),
+  suffix: z.string(),
+  display_name: z.string(),
+})
+
+export type DatasetConfig = z.infer<typeof DatasetConfigSchema>
+
+// Available model info from API
+export const AvailableModelInfoSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  description: z.string(),
+  model_type: z.string(),
+  datasets: DatasetConfigSchema,
+  is_available: z.boolean(),
+})
+
+export type AvailableModelInfo = z.infer<typeof AvailableModelInfoSchema>
+
+// Response from /api/models
+export const AvailableModelsResponseSchema = z.object({
+  models: z.array(AvailableModelInfoSchema),
+  available_count: z.number().int(),
+  total_count: z.number().int(),
+  dataset_combinations: z.number().int(),
+})
+
+export type AvailableModelsResponse = z.infer<
+  typeof AvailableModelsResponseSchema
+>
+
+// Base model types for grouping
+export const BASE_MODEL_TYPES = [
+  { value: "simplified", label: "Simplified 3-Class" },
+  { value: "hierarchical", label: "Hierarchical 5-Class" },
+  { value: "zones", label: "Zone-Based" },
+  { value: "simple", label: "Random Forest (Baseline)" },
+  { value: "tuned", label: "Tuned Models" },
+  { value: "deep", label: "Deep Learning" },
+] as const
+
+export type BaseModelType = (typeof BASE_MODEL_TYPES)[number]["value"]
 
 // Severity class colors for visualization (3-class)
 export const SEVERITY_COLORS = {
