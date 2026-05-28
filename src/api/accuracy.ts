@@ -11,7 +11,6 @@ import type {
   RocDataResponse,
   RocComparisonResponse,
   DateRangeFilter,
-  AvailableModelsResponse,
 } from "@/types/accuracy"
 
 const API_BASE = "http://localhost:8000"
@@ -228,63 +227,6 @@ export async function getROCComparison(
       .json()
       .catch(() => ({ detail: "Unknown error" }))
     throw new Error(error.detail || "Failed to fetch ROC comparison")
-  }
-
-  return response.json()
-}
-
-// ============================================================================
-// Available Models API
-// ============================================================================
-
-/**
- * Fetch list of available models with their dataset configurations.
- *
- * @param includeUnavailable - If true, includes models that aren't trained yet
- * @returns AvailableModelsResponse with all model information
- */
-export async function getAvailableModels(
-  includeUnavailable: boolean = false
-): Promise<AvailableModelsResponse> {
-  const params = new URLSearchParams()
-  if (includeUnavailable) {
-    params.set("include_unavailable", "true")
-  }
-
-  const url = params.toString()
-    ? `${API_BASE}/api/models?${params}`
-    : `${API_BASE}/api/models`
-
-  const response = await fetch(url)
-
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: "Unknown error" }))
-    throw new Error(error.detail || "Failed to fetch available models")
-  }
-
-  return response.json()
-}
-
-/**
- * Refresh the model registry on the server.
- * Call this after training new models.
- */
-export async function refreshModels(): Promise<{
-  status: string
-  message: string
-  models: string[]
-}> {
-  const response = await fetch(`${API_BASE}/api/models/refresh`, {
-    method: "POST",
-  })
-
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: "Unknown error" }))
-    throw new Error(error.detail || "Failed to refresh models")
   }
 
   return response.json()
