@@ -11,17 +11,17 @@ import type {
   RocDataResponse,
   RocComparisonResponse,
   DateRangeFilter,
-} from "@/types/accuracy";
+} from "@/types/accuracy"
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://localhost:8000"
 
-export type MapFilter = "all" | "correct" | "incorrect";
+export type MapFilter = "all" | "correct" | "incorrect"
 
 /**
  * Format a Date object to ISO date string (YYYY-MM-DD) for API calls.
  */
 function formatDateForAPI(date: Date): string {
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split("T")[0]
 }
 
 /**
@@ -30,7 +30,7 @@ function formatDateForAPI(date: Date): string {
  */
 export type DateFilterOptions =
   | { days: TimeRangeValue; dateRange?: never }
-  | { days?: never; dateRange: DateRangeFilter };
+  | { days?: never; dateRange: DateRangeFilter }
 
 /**
  * Fetch accuracy metrics and predictions for crash data.
@@ -47,30 +47,30 @@ export async function getAccuracyMetrics(
 ): Promise<AccuracyResponse> {
   const params = new URLSearchParams({
     max_crashes: maxCrashes.toString(),
-  });
+  })
 
   // Add date parameters based on filter type
   if ("dateRange" in dateFilter && dateFilter.dateRange) {
-    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from));
-    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to));
+    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from))
+    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to))
   } else if ("days" in dateFilter && dateFilter.days) {
-    params.set("days", dateFilter.days.toString());
+    params.set("days", dateFilter.days.toString())
   }
 
   if (model) {
-    params.set("model", model);
+    params.set("model", model)
   }
 
-  const response = await fetch(`${API_BASE}/api/accuracy?${params}`);
+  const response = await fetch(`${API_BASE}/api/accuracy?${params}`)
 
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || "Failed to fetch accuracy metrics");
+      .catch(() => ({ detail: "Unknown error" }))
+    throw new Error(error.detail || "Failed to fetch accuracy metrics")
   }
 
-  return response.json();
+  return response.json()
 }
 
 /**
@@ -86,26 +86,26 @@ export async function getModelComparison(
 ): Promise<ModelComparisonResponse> {
   const params = new URLSearchParams({
     max_crashes: maxCrashes.toString(),
-  });
+  })
 
   // Add date parameters based on filter type
   if ("dateRange" in dateFilter && dateFilter.dateRange) {
-    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from));
-    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to));
+    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from))
+    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to))
   } else if ("days" in dateFilter && dateFilter.days) {
-    params.set("days", dateFilter.days.toString());
+    params.set("days", dateFilter.days.toString())
   }
 
-  const response = await fetch(`${API_BASE}/api/accuracy/compare?${params}`);
+  const response = await fetch(`${API_BASE}/api/accuracy/compare?${params}`)
 
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || "Failed to fetch model comparison");
+      .catch(() => ({ detail: "Unknown error" }))
+    throw new Error(error.detail || "Failed to fetch model comparison")
   }
 
-  return response.json();
+  return response.json()
 }
 
 /**
@@ -125,35 +125,35 @@ export async function getMapData(
 ): Promise<MapDataResponse> {
   const params = new URLSearchParams({
     max_crashes: maxCrashes.toString(),
-  });
+  })
 
   // Add date parameters based on filter type
   if ("dateRange" in dateFilter && dateFilter.dateRange) {
-    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from));
-    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to));
+    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from))
+    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to))
   } else if ("days" in dateFilter && dateFilter.days) {
-    params.set("days", dateFilter.days.toString());
+    params.set("days", dateFilter.days.toString())
   }
 
   // Only add filter param if not "all"
   if (filter !== "all") {
-    params.set("filter", filter);
+    params.set("filter", filter)
   }
 
   if (model) {
-    params.set("model", model);
+    params.set("model", model)
   }
 
-  const response = await fetch(`${API_BASE}/api/accuracy/map?${params}`);
+  const response = await fetch(`${API_BASE}/api/accuracy/map?${params}`)
 
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || "Failed to fetch map data");
+      .catch(() => ({ detail: "Unknown error" }))
+    throw new Error(error.detail || "Failed to fetch map data")
   }
 
-  return response.json();
+  return response.json()
 }
 
 /**
@@ -171,30 +171,30 @@ export async function getROCData(
 ): Promise<RocDataResponse> {
   const params = new URLSearchParams({
     max_crashes: maxCrashes.toString(),
-  });
+  })
 
   // Add date parameters based on filter type
   if ("dateRange" in dateFilter && dateFilter.dateRange) {
-    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from));
-    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to));
+    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from))
+    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to))
   } else if ("days" in dateFilter && dateFilter.days) {
-    params.set("days", dateFilter.days.toString());
+    params.set("days", dateFilter.days.toString())
   }
 
   if (model) {
-    params.set("model", model);
+    params.set("model", model)
   }
 
-  const response = await fetch(`${API_BASE}/api/accuracy/roc?${params}`);
+  const response = await fetch(`${API_BASE}/api/accuracy/roc?${params}`)
 
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || "Failed to fetch ROC data");
+      .catch(() => ({ detail: "Unknown error" }))
+    throw new Error(error.detail || "Failed to fetch ROC data")
   }
 
-  return response.json();
+  return response.json()
 }
 
 /**
@@ -210,24 +210,24 @@ export async function getROCComparison(
 ): Promise<RocComparisonResponse> {
   const params = new URLSearchParams({
     max_crashes: maxCrashes.toString(),
-  });
+  })
 
   // Add date parameters based on filter type
   if ("dateRange" in dateFilter && dateFilter.dateRange) {
-    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from));
-    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to));
+    params.set("start_date", formatDateForAPI(dateFilter.dateRange.from))
+    params.set("end_date", formatDateForAPI(dateFilter.dateRange.to))
   } else if ("days" in dateFilter && dateFilter.days) {
-    params.set("days", dateFilter.days.toString());
+    params.set("days", dateFilter.days.toString())
   }
 
-  const response = await fetch(`${API_BASE}/api/accuracy/roc/compare?${params}`);
+  const response = await fetch(`${API_BASE}/api/accuracy/roc/compare?${params}`)
 
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || "Failed to fetch ROC comparison");
+      .catch(() => ({ detail: "Unknown error" }))
+    throw new Error(error.detail || "Failed to fetch ROC comparison")
   }
 
-  return response.json();
+  return response.json()
 }

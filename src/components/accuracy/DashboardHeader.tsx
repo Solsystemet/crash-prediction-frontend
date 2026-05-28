@@ -16,8 +16,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import {
-  SAMPLE_SIZE_OPTIONS,
   MODEL_OPTIONS,
+  SAMPLE_SIZE_OPTIONS,
   type SampleSizeValue,
   type ModelValue,
 } from "@/types/accuracy"
@@ -85,9 +85,10 @@ export function DashboardHeader({
             <Select
               value={selectedModel}
               onValueChange={(v) => onModelChange(v as ModelValue)}
+              disabled={isLoading}
             >
-              <SelectTrigger className="w-[170px]">
-                <SelectValue />
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Select model" />
               </SelectTrigger>
               <SelectContent>
                 {MODEL_OPTIONS.map((opt) => (
